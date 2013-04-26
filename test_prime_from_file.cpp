@@ -79,6 +79,12 @@ int is_probable_prime_Table_inv(const uint8_t* N, int bytes)
 	return 1;
 }
 
+//a^N(mod N)
+int is_probable_prime_Fermats(int a, const uint8_t* N, int bytes)
+{
+
+}
+
 uint64_t byte2N_BE(uint8_t* buff, int bytes)
 {
 	uint64_t N = buff[0];
@@ -148,7 +154,7 @@ int main(int argc, char** argv)
 	uint64_t n = 0;
 	printf("BE ");
 	if (len <= 8) {
-		uint64_t n = byte2N_BE(N, len);
+		n = byte2N_BE(N, len);
 		printf("n=%llu len=%ld\n", n, len);
 	}
 	int d = is_probable_prime_Table(N, len);
@@ -164,7 +170,7 @@ int main(int argc, char** argv)
 	n = 0;
 	printf("LE ");
 	if (len <= 8) {
-		uint64_t n = byte2N_LE(N, len);
+		n = byte2N_LE(N, len);
 		printf("n=%llu len=%ld\n", n, len);
 	}
 	d = is_probable_prime_Table_inv(N, len);
