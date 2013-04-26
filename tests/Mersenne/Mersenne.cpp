@@ -13,7 +13,7 @@ void write_N(uint64_t *N, int idx)
 int main()
 {
     for (int i = 0; i < 63; ++i) {
-        uint64_t N = (1<<i) + 1;
+        uint64_t N = (1<<i) - 1;
         printf("2^%d=%llu\n", i, N);
         write_N(&N, i);
     }
