@@ -21,6 +21,7 @@ int mod_exp_base2(int a, int e, int m)
 	return r;
 }
 
+typedef int (*mod_big_func_t)(const uint8_t* N, int bytes, int m);
 //N: the string stores a big number
 //bytes: <=256
 //base 256=2^8, 
@@ -56,12 +57,12 @@ static const int kPrimes[] = {
 };
 
 //return the first (prime) divisor or 1 if is a prime
-int is_probable_prime_Table(const uint8_t* N, int bytes)
+int is_probable_prime_Table(const uint8_t* N, int bytes, mod_big_func_t mod_func = mod_big)
 {
 	const int table_size = sizeof(kPrimes)/sizeof(kPrimes[0]);
 	bool result = true;
 	for (int i = 0; i < table_size; ++i) {
-		if (!!!mod_big(N, bytes, kPrimes[i])) {
+		if (!!!mod_func(N, bytes, kPrimes[i])) {
 			return kPrimes[i];
 		}
 	}
@@ -70,13 +71,7 @@ int is_probable_prime_Table(const uint8_t* N, int bytes)
 
 int is_probable_prime_Table_inv(const uint8_t* N, int bytes)
 {
-	const int table_size = sizeof(kPrimes)/sizeof(kPrimes[0]);
-	bool result = true;
-	for (int i = 0; i < table_size; ++i) {
-		if (!!!mod_big_inv(N, bytes, kPrimes[i])) 
-			return kPrimes[i];
-	}
-	return 1;
+	return is_probable_prime_Table(N, bytes, mod_big_inv);
 }
 
 //a^N(mod N)
@@ -113,25 +108,31 @@ uint64_t byte2N_LE(uint8_t* buff, int bytes)
 //options: a:len, a-b, filename
 int main(int argc, char** argv)
 {
-	if (argc == 1 || argc == 2) {
-		printf("%s a|a:len|a-b filename\n", argv[0]);
+	if (argc == 1) {
+		printf("%s [a|a+len] filename\n"
+				"'len' bytes from position 'a' bytes in the file is the big number you gona test."
+				"default: a=0, len=file size\n", argv[0]);
 		return 1;
 	}
-	size_t a = 0, len = -1;
-
-	char *c = strchr(argv[1], ':');
-	if (c) {
-		*c = 0;
-		a = atoi(argv[1]);
-		len = atoi(c+1);
-	} else {
-		a = atoi(argv[1]);
+	size_t a = 0, len = 0;
+	const char *filename = argv[1];
+	if (argc == 3) {
+		filename = argv[2];
+		char *c = strchr(argv[1], '+'); //TODO: + means BE, - means LE
+		if (c) {
+			*c = 0;
+			a = atoi(argv[1]);
+			len = atoi(c+1);
+		} else {
+			a = atoi(argv[1]);
+		}
 	}
-	FILE *f = fopen(argv[2], "rb");
+	FILE *f = fopen(filename, "rb");
 	fseek(f, 0, SEEK_END);
 	size_t s = ftell(f);
-	if (len == -1 || a + len > s)
+	if (len == 0 || a + len > s)
 		len = s - a;
+	//printf("%lu+%lu\n", a, len);
 	fseek(f, a, SEEK_SET);
 	uint8_t *N = (uint8_t*)malloc(sizeof(uint8_t)*len);
 	if (!N) {
@@ -152,6 +153,7 @@ int main(int argc, char** argv)
 	}
 */
 	uint64_t n = 0;
+
 	printf("BE ");
 	if (len <= 8) {
 		n = byte2N_BE(N, len);
